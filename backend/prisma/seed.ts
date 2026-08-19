@@ -11,16 +11,15 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   const adminEmail = "admin@ezfinanz.com";
   const adminPassword = "Admin@12345";
-
-  const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
-  if (existing) {
-    console.log("Admin user already exists, skipping.");
-    return;
-  }
-
   const passwordHash = await bcrypt.hash(adminPassword, 12);
-  await prisma.user.create({
-    data: {
+
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {
+      passwordHash, // Forces password update in case old hash was wrong/plaintext
+      role: "ADMIN",
+    },
+    create: {
       name: "EZFINANZ Admin",
       email: adminEmail,
       phone: "9999999999",
@@ -31,9 +30,7 @@ async function main() {
     },
   });
 
-  console.log("Seeded admin user:");
-  console.log(`  email:    ${adminEmail}`);
-  console.log(`  password: ${adminPassword}`);
+  console.log("Admin user seeded/updated successfully.");
 }
 
 main()
