@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  /* EZFINANZ token system — ink navy ground, a single confident
+     signal-green accent used sparingly for money-positive actions,
+     amber reserved only for "needs attention" states. */
+  --color-ink-950: #0a0f1a;
+  --color-ink-900: #0f1626;
+  --color-ink-800: #172035;
+  --color-ink-700: #232e47;
+  --color-ink-600: #3a4763;
+  --color-ink-400: #7c8aa8;
+  --color-ink-200: #c9d1e2;
+  --color-ink-100: #e7ebf3;
+  --color-ink-50: #f5f7fb;
+
+  --color-signal-600: #0f9d6e;
+  --color-signal-500: #16b981;
+  --color-signal-400: #4fd6a3;
+  --color-signal-100: #d8f6e9;
+
+  --color-amber-500: #e0a626;
+  --color-amber-100: #fbeecc;
+
+  --color-rose-500: #d64f5c;
+  --color-rose-100: #fbe0e2;
+
+  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+    background: var(--color-ink-50);
+    color: var(--color-ink-900);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: var(--color-signal-100);
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-signal-500);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .stat-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
