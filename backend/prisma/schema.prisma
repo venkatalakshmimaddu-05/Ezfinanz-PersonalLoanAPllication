@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+// Overall lifecycle of a loan application. Every step-completion endpoint
+// on the backend must check this before accepting a write — the frontend
+// wizard is a UX convenience, not the source of truth for what step a
+// user is allowed to submit.
+enum ApplicationStatus {
+  DRAFT
+  KYC_PENDING
+  ELIGIBILITY_PENDING
+  EMI_PENDING
+  BANK_PENDING
+  DECLARATION_PENDING
+  SELFIE_PENDING
+  ADMIN_REVIEW
+  APPROVED
+  REJECTED
+  DISBURSED
+}
+
+enum EligibilityResult {
+  ELIGIBLE
+  PARTIALLY_ELIGIBLE
+  NOT_ELIGIBLE
+}
+
+enum SelfieStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String       @id @default(uuid())
+  name          String
+  email         String       @unique
+  phone         String?      @unique
+  passwordHash  String?
+  provider      AuthProvider @default(LOCAL)
+  role          Role         @default(CUSTOMER)
+  emailVerified Boolean      @default(false)
+  phoneVerified Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  applications LoanApplication[]
+  otps         Otp[]
+}
+
+// Generic OTP store, reused for both email/phone verification and any
+// step-up auth. Deliberately simple: code + expiry + consumed flag.
+model Otp {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   String // "phone" | "email"
+  code      String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, channel])
+}
+
+model LoanApplication {
+  id            String            @id @default(uuid())
+  userId        String
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status        ApplicationStatus @default(DRAFT)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  kyc          KYCDetail?
+  eligibility  EligibilityCheck?
+  emiSelection EMISelection?
+  bankAccount  BankAccount?
+  declaration  Declaration?
+  selfie       SelfieVerification?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model KYCDetail {
+  id            String          @id @default(uuid())
+  applicationId String          @unique
+  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fullName      String
+  dob           DateTime
+  gender        String
+  address       String
+  idType        String // "PAN" | "AADHAAR" | "PASSPORT"
+  idNumber      String
+  idPhotoUrl    String?
+  createdAt     DateTime        @default(now())
+}
+
+model EligibilityCheck {
+  id              String            @id @default(uuid())
+  applicationId   String            @unique
+  application     LoanApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  monthlyIncome   Float
+  requestedAmount Float
+  employer        String
+  creditScore     Int
+  existingDebt    Float
+  dtiRatio        Float
+  result          EligibilityResult
+  createdAt       DateTime          @default(now())
+}
+
+model EMISelection {
+  id              String          @id @default(uuid())
+  applicationId   String          @unique
+  application     LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  amount          Float
+  tenureMonths    Int
+  interestRate    Float // annual %, nominal
+  processingFee   Float
+  gst             Float
+  netDisbursement Float
+  emi             Float
+  totalInterest   Float
+  totalRepayment  Float
+  irrAnnual       Float // effective annual rate, accounts for fees
+  createdAt       DateTime        @default(now())
+}
+
+model BankAccount {
+  id            String          @id @default(uuid())
+  applicationId String          @unique
+  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  holderName    String
+  accountNumber String
+  ifsc          String
+  bankName      String
+  verified      Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+}
+
+model Declaration {
+  id            String          @id @default(uuid())
+  applicationId String          @unique
+  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  acceptedTerms Boolean
+  ipAddress     String?
+  acceptedAt    DateTime        @default(now())
+}
+
+model SelfieVerification {
+  id            String          @id @default(uuid())
+  applicationId String          @unique
+  application   LoanApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  photoUrl      String
+  status        SelfieStatus    @default(PENDING)
+  rejectionReason String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  submittedAt   DateTime        @default(now())
+}
