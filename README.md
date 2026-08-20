@@ -6,6 +6,13 @@ EMI selection → bank details → declaration → selfie verification) plus an
 admin review dashboard, with correct EMI/IRR/DTI financial math and
 simulated third-party integrations (OTP, credit bureau, bank verification).
 
+
+## 🚀 Live Demo
+
+**Live Application:**  
+https://ezfinanz-personal-loan-a-pllication.vercel.app/
+
+
 ## Stack
 
 - **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS v4
@@ -135,19 +142,4 @@ npm run dev              # starts on http://localhost:5173
 - The OTP screen shows the simulated code directly on screen (no real SMS
   gateway is wired up) — this is intentional and labeled as such.
 
-## Notes for the interview
 
-- **Role separation** is enforced server-side on every admin route
-  (`requireAdmin` middleware), not just hidden in the frontend UI.
-- **File uploads** (ID photo, selfie) are validated for mime type and size
-  server-side via multer, stored outside version control, served through a
-  static route.
-- **Passwords** are bcrypt-hashed (cost factor 12), never stored or logged
-  in plaintext.
-- Prisma's engine binaries could not be fetched in the sandboxed
-  environment this was built in (network allowlist doesn't include
-  `binaries.prisma.sh`) — `prisma generate` / `migrate` will work normally
-  on a machine with standard internet access. Everything else was
-  compiled and type-checked (`tsc --noEmit` / `npm run build`) successfully
-  in-sandbox, and the financial math was independently run and verified
-  against known reference values.
