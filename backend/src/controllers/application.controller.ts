@@ -48,7 +48,22 @@ async function getOwnedApplication(applicationId: string, userId: string) {
 
 // ---- Start / list applications ----
 
+/**
+ * Real enforcement of "both email and phone must be verified before later
+ * steps" lives here, server-side — the frontend redirect to /verify is a
+ * UX convenience only and would do nothing to stop someone from calling
+ * this endpoint directly with a valid but unverified account's token.
+ */
 export async function createApplication(req: AuthedRequest, res: Response) {
+  const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  if (!user.emailVerified || !user.phoneVerified) {
+    return res.status(403).json({
+      error: "Please verify both your email and phone number before starting an application",
+    });
+  }
+
   const app = await prisma.loanApplication.create({
     data: { userId: req.user!.userId, status: "KYC_PENDING" },
   });

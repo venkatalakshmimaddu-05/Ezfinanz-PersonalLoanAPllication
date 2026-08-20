@@ -6,9 +6,13 @@ import type { Role } from "../types";
 export function ProtectedRoute({
   children,
   requireRole,
+  requireVerified,
 }: {
   children: ReactNode;
   requireRole?: Role;
+  /** When true, redirects to /verify unless both email and phone are verified.
+   * Admin routes never need this — only customer-facing application routes. */
+  requireVerified?: boolean;
 }) {
   const { user, loading } = useAuth();
 
@@ -27,6 +31,13 @@ export function ProtectedRoute({
   // never the actual security boundary.
   if (requireRole && user.role !== requireRole) {
     return <Navigate to={user.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
+  }
+
+  // Same principle: this is a UX convenience. The backend independently
+  // rejects application creation for unverified users, so this can't be
+  // bypassed just by calling the API directly.
+  if (requireVerified && (!user.emailVerified || !user.phoneVerified)) {
+    return <Navigate to="/verify" replace />;
   }
 
   return <>{children}</>;

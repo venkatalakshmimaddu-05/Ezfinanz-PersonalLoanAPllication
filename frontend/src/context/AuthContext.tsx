@@ -10,6 +10,7 @@ interface AuthContextValue {
   signup: (name: string, email: string, phone: string, password: string) => Promise<void>;
   loginWithGoogleSimulated: (email: string, name: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -61,15 +62,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persistSession(data);
   }
 
-  function logout() {
+    function logout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     setUser(null);
   }
 
+  // Re-pulls the current user from the server and updates local state +
+  // cache. Used right after an OTP verification succeeds, since that flips
+  // emailVerified/phoneVerified server-side and the UI needs to reflect it
+  // immediately without forcing a full page reload.
+  async function refreshUser() {
+    const { data } = await api.get("/auth/me");
+    setUser(data);
+    localStorage.setItem("user", JSON.stringify(data));
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, loginWithGoogleSimulated, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, signup, loginWithGoogleSimulated, logout, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
